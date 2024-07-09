@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/basic.html}">
+
+<head>
+    <title>Board Read</title>
+</head>
+
+<div layout:fragment="content">
+    <div class="row mt-3">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    Board Read
+                </div>
+                <div class="card-body">
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">Bno</span>
+                        <input type="text" class="form-control" th:value="${dto.bno}" readonly>
+                    </div>
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">Title</span>
+                        <input type="text" class="form-control" th:value="${dto.title}" readonly>
+                    </div>
+
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">Content</span>
+                        <textarea class="form-control col-sm-5" rows="5" readonly>[[${dto.content}]]</textarea>
+                    </div>
+
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">Writer</span>
+                        <input type="text" class="form-control" th:value="${dto.writer}" readonly>
+                    </div>
+
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">RegDate</span>
+                        <input type="text" class="form-control"
+                               th:value="${#temporals.format(dto.regDate, 'yyyy-MM-dd HH:mm:ss')}" readonly>
+                    </div>
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">ModDate</span>
+                        <input type="text" class="form-control"
+                               th:value="${#temporals.format(dto.modDate, 'yyyy-MM-dd HH:mm:ss')}" readonly>
+                    </div>
+
+                    <div class="my-4">
+                        <div class="float-end" th:with="link = ${pageRequestDTO.getLink()}">
+                            <a th:href="|@{/board/list}?${link}|" class="text-decoration-none">
+                                <button type="button" class="btn btn-primary">List</button>
+                            </a>
+                            <a th:href="|@{/board/modify(bno=${dto.bno})}&${link}|" class="text-decoration-none">
+                                <button type="button" class="btn btn-secondary">Modify</button>
+                            </a>
+                        </div>
+                    </div>
+
+
+                </div><!--end card body-->
+            </div><!--end card-->
+        </div><!-- end col-->
+    </div><!-- end row-->
+
+    <!-- 댓글 관련 html -->
+    <div class="row mt-3">
+        <div class="col-md-12">
+            <div class="my-4 ">
+                <button class="btn btn-info  addReplyBtn">ADD REPLY</button>
+            </div>
+            <ul class="list-group replyList">
+            </ul>
+        </div>
+    </div>
+    <div class="row mt-3">
+        <div class="col">
+            <ul class="pagination replyPaging">
+            </ul>
+        </div>
+    </div>
+
+    <!-- 댓글 등록 모달 -->
+    <div class="modal registerModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Register Reply</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">Reply Text</span>
+                        <input type="text" class="form-control replyText">
+                    </div>
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">Replyer</span>
+                        <input type="text" class="form-control replyer">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary registerBtn">Register</button>
+                    <button type="button" class="btn btn-outline-dark closeRegisterBtn">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- end regist modal -->
+
+    <!-- 댓글 수정 모달 -->
+    <div class="modal modifyModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title replyHeader"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">Reply Text</span>
+                        <input type="text" class="form-control modifyText">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-info modifyBtn">Modify</button>
+                    <button type="button" class="btn btn-danger removeBtn">Remove</button>
+                    <button type="button" class="btn btn-outline-dark closeModifyBtn">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- end modify Modal -->
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <script src="/js/reply.js"></script>
+
+</div> <!--end layout fragment-->
+
+<script layout:fragment="script" th:inline="javascript">
+    // Axios 사용하여 서버에서 데이터를 가져오고, 이를 DOM에 반영하는 함수 정의
+
+    const bno = [[${dto.bno}]];
+    // get1(bno); // -- reply.js에 선언한 비동기 함수 호출
+    // console.log(get1(bno)); // -- 실행 후 결과 받은 부분을 console에 log로 출력 (Promise 객체 반환)
+
+    // Promise 객체 처리 위해 then(), catch() 사용
+    /* get1(bno)
+        .then(data => {
+            console.log(data);
+        })
+        .catch(e => {
+            console.error(e);
+        });
+    */
+
+      // getList()를 호출하는 함수와 현재 페이지가 로딩되면 해당 함수 호출
+      /* function printReplies(page, size, goLast) {
+          getList({bno, page, size, goLast})
+              .then(
+                  data => {
+                      console.log(data);
+                  }
+              )
+              .catch(
+                  e => {
+                      console.error(e)
+                  }
+              )
+      }
+
+      printReplies(1, 10);*/
+
+
+    // 결과 데이터는 dtoList로 화면에 목록(replyList)을 처리하고, 나머지 정보들로 페이지 번호 출력
+    // 댓글 목록 출력 printList() | 페이지 번호 출력 printPages() -> Axios 결과 출력하도록 수정
+
+    // DOM 요소 선택
+    const replyList = document.querySelector('.replyList') //댓글 목록 DOM
+    const replyPaging = document.querySelector('.replyPaging') //페이지 목록 DOM
+
+
+    // dtoList 매개변수를 받아서 댓글 목록을 HTML 형식으로 생성 -- 댓글 목록 출력
+    function printList(dtoList) {
+        // 댓글 목록
+        let str = '';
+
+        if (dtoList && dtoList.length > 0) { // -- dtoList가 존재하고, 0보다 크다면
+            for (const dto of dtoList) { // 각 댓글(dto)을 리스트 아이템으로 변환하여 str 변수에 추가
+                str += `<li class="list-group-item d-flex replyItem">
+                      <span class="col-2">${dto.rno}</span>
+                      <span class="col-6" data-rno="${dto.rno}">${dto.replyText}</span>
+                      <span class="col-2">${dto.replyer}</span>
+                      <span class="col-2">${dto.regDate} </span>
+                    </li>`
+            }
+        }
+        replyList.innerHTML = str; // 최종적으로 replyList 요소의 innerHTML에 str을 설정하여 댓글 목록 화면에 출력
+    }
+
+    // data 매개변수를 받아서 페이지 목록을 HTML 형식으로 생성 -- 페이지 목록 출력
+    function printPages(data) {
+        //pagination
+        let pageStr = '';
+
+        if (data.prev) { // data.prev가 참이면 PREV 링크 추가
+            pageStr += `<li class="page-item"><a class="page-link" data-page="${data.start - 1}">PREV</a></li>`
+        }
+
+        // data.start ~ data.end까지의 페이지 번호를 순회하면서 각 페이지 링크 생성
+        // 현재 페이지(data.page)라면 active 클래스를 추가하여 강조할 수 있도록 설정
+        for (let i = data.start; i <= data.end; i++) {
+            pageStr += `<li class="page-item ${i == data.page ? "active" : ""} "><a class="page-link" data-page="${i}">${i}</a></li>`
+        }
+
+        if (data.next) { // data.prev가 참이면 NEXT 링크 추가
+            pageStr += `<li class="page-item"><a class="page-link" data-page="${data.end + 1}">NEXT</a></li>`
+        }
+        replyPaging.innerHTML = pageStr // 최종적으로 replyPaging 요소의 innerHTML에 pageStr을 설정하여 페이지 목록 화면에 출력
+    }
+
+    // page, size, goLast 매개변수 받아 서버에 댓글 목록 요청 -- 댓글 목록과 페이지 목록 출력 함수
+    function printReplies(page, size, goLast) {
+        // getList 함수 -- reply.js의 axios 함수 (서버에 요청 보내고 데이터 받아옴)
+        getList({bno, page, size, goLast}).then( // -- 성공적으로 데이터를 받아오면
+            data => {
+                printList(data.dtoList) //목록 처리 함수 호출 -- 댓글 목록 화면 출력
+                printPages(data) //페이지 처리 함수 호출 -- 페이지 목록 화면 출력
+            }
+        ).catch(e => { // -- 에러 발생
+            console.error(e); // -- 콘솔에 에러 메시지 출력
+        })
+
+    }
+
+    // 초기 페이지에(1페이지, 페이지 크기 10), 마지막 페이지로 이동 여부(true)를 설정하여 함수 호출
+    printReplies(1, 10, true)  // -- 페이지 초기 로딩 시 댓글 목록과 페이지 목록 무조건 출력
+
+
+    //댓글 등록 모달
+    const registerModal = new bootstrap.Modal(document.querySelector(".registerModal"));
+    //registerModel
+    const registerBtn = document.querySelector(".registerBtn");
+    const replyText = document.querySelector(".replyText");
+    const replyer = document.querySelector(".replyer");
+    const closeRegisterBtn = document.querySelector(".closeRegisterBtn");
+
+    // 화면상에서 [ADD REPLY] 버튼을 눌렀을 때 모달창을 보여주도록 이벤트 처리
+    document.querySelector(".addReplyBtn").addEventListener("click", function (e) {
+        registerModal.show();
+    }, false);
+
+    // 모달창의 [Close] 버튼에 대한 처리 추가
+    closeRegisterBtn.addEventListener("click", function (e) {
+        registerModal.hide();
+    }, false);
+
+    // 모달창 하단의 [Register] 버튼을 눌렀을 때 이벤트 처리 추가
+    // reply.js의 addReply() 호출하고 경고창을 통해 추가된 댓글 번호를 보여줄 수 있도록 구현
+    // 경고창이 닫히면 마지막 페이지를 다시 호출해 등록된 댓글이 화면에 보여야 함
+    registerBtn.addEventListener("click", function (e) {
+        // 댓글 정보를 객체로 생성
+        const replyObj = {
+            bno: bno, // -- 게시물 번호
+            replyText: replyText.value, // -- 댓글 내용
+            replyer: replyer.value // -- 댓글 작성자
+        }
+
+        // addReply 함수 호출 후 결과 처리
+        addReply(replyObj).then(result => {
+            alert(result.rno) // -- 댓글 등록 성공 시 알림 표시
+            registerModal.hide() // -- 등록 모달 창 닫기
+            replyText.value = ''
+            replyer.value = ''
+            printReplies(1, 10, true) // -- 댓글 목록 갱신
+        }).catch(e => {
+            alert("Exception...") // -- 예외 발생 시 알림 표시
+        })
+    }, false)
+
+
+    // 댓글 페이지 번호 클릭 이동 구현
+    // 사용자가 페이지 번호를 클릭하면 해당 페이지의 댓글 목록을 가져와 화면에 출력
+    /* 페이지와 크기 변수 초기화 */
+    let page = 1
+    let size = 10
+
+    /* 이벤트 리스너 등록 */
+    replyPaging.addEventListener("click", function (e) {
+
+        /* 이벤트 전파 방지 */
+        e.preventDefault()
+        e.stopPropagation()
+
+        const target = e.target // -- 클릭된 요소 참조
+
+        if (!target || target.tagName != 'A') { // 클릭된 요소가 존재하지 않거나, 태그 이름이 A가 아니면
+            return // 함수 종료
+        }
+
+        /* 페이지 번호 가져오기 및 댓글 목록 갱신 */
+        const pageNum = target.getAttribute("data-page") // -- 클릭된 링크의 data-page 속성 값
+        page = pageNum // -- 현재 페이지 번호를 클릭된 페이지 번호로 업데이트
+        printReplies(page, size) // -- 업데이트 된 페이지 번호와 기존 페이지 크기 이용하여 댓글 목록 가져오기
+
+    }, false)
+
+
+    // 댓글 수정 모달
+    // 선택한 댓글의 번호를 보여주고 댓글의 내용을 수정할 수 있도록 구성 제어
+    const modifyModal = new bootstrap.Modal(document.querySelector(".modifyModal"));
+
+    const replyHeader = document.querySelector(".replyHeader");
+    const modifyText = document.querySelector(".modifyText");
+    const modifyBtn = document.querySelector(".modifyBtn");
+    const removeBtn = document.querySelector(".removeBtn");
+    const closeModifyBtn = document.querySelector(".closeModifyBtn");
+
+    /* 특정 댓글을 눌렀을 때 모달창을 보여줄 수 있도록 replyList에 이벤트 처리 추가 */
+    // 댓글 목록 또한 브라우저에서 매번 새로 만들어지기 때문에 이벤트는 항상 존재하는 바깥쪽 <ul>을 대상으로 처리
+    // 사용자가 댓글 목록에서 댓글을 클릭하면 해당 함수 실행
+    replyList.addEventListener("click", function (e) {
+
+        /* 이벤트 전파 방지 */
+        e.preventDefault()
+        e.stopPropagation()
+
+        const target = e.target // -- 클릭된 요소 참조
+
+        if (!target || target.tagName != 'SPAN') { // 클릭된 요소가 존재하지 않거나, 태그 이름이 SPAN가 아니면
+            return // 함수 종료
+        }
+
+        const rno = target.getAttribute("data-rno") // 클릭된 요소의 data-rno 속성 값 할당
+
+        if (!rno) { // 댓글 번호가 존재하지 않으면,
+            return // 함수 종료
+        }
+
+        /* 댓글 내용 가져오기 및 모달 창 표시 */
+        getReply(rno).then(reply => { // 댓글 번호 사용하여 서버에서 해당 댓글 가져옴
+            console.log(reply)
+            replyHeader.innerHTML = reply.rno // -- 모달 창 헤더에 댓글 번호 표시
+            modifyText.value = reply.replyText // -- 모달 창 텍스트 영역에 댓글 내용 표시
+            modifyModal.show() // -- 모달 창 화면에 표시
+
+        }).catch(e => alert('error')) // -- 예외 발생 시 경고창으로 error 알림 표시
+
+    }, false);
+
+
+    /* 댓글 수정과 화면 갱신 */
+    // 댓글 수정 이벤트 리스너
+    modifyBtn.addEventListener("click", function (e) {
+
+        /* 수정할 댓글 정보 객체 생성 */
+        const replyObj = {
+            bno: bno, // -- 게시물 번호
+            rno: replyHeader.innerHTML, // -- 댓글 번호 (모달 창의 헤더에 표시된 값을 가져옴)
+            replyText: modifyText.value // -- 수정된 댓글 내용 (모달 창의 텍스트 영역에 입력값 가져옴)
+        }
+
+        /* 댓글 수정 요청 */
+        modifyReply(replyObj).then(result => {
+            alert(result.rno + ' 댓글이 수정되었습니다.')
+            replyText.value = ''
+            modifyModal.hide() // -- 모달 창 숨김
+            printReplies(page, size) // -- 현재 페이지의 댓글 목록 갱신
+        }).catch(e => {
+            console.log(e)
+        })
+    }, false)
+
+    /* 모달 창 닫기 버튼 클릭 리스너 */
+    closeModifyBtn.addEventListener("click", function (e) {
+        modifyModal.hide() // -- 모달 창 숨김
+    }, false);
+
+
+    /* 댓글 삭제 -- 삭제 후 댓글의 1페이지로 이동 */
+    removeBtn.addEventListener("click", function (e) {
+
+        removeReply(replyHeader.innerHTML).then(result => {
+
+            alert(result.rno + ' 댓글이 삭제되었습니다.')
+            replyText.value = ''
+            modifyModal.hide()
+
+            page = 1 // 이 부분이 없다면 원래 페이지로
+
+            printReplies(page, size)
+
+        }).catch(e => {
+            console.log(e)
+        })
+    }, false)
+</script>
