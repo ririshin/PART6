@@ -51,7 +51,8 @@ async function addReply(replyObj) {
 // 댓글 조회 GET 방식 | 댓글 수정 PUT 방식
 async function getReply(rno) {
     const response = await axios.get(`/replies/${rno}`)
-    return response.data
+    console.log(response);
+    return response.data;
 }
 
 async function modifyReply(replyObj) {
